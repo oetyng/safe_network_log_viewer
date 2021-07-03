@@ -80,7 +80,6 @@ function displayEverything() {
 }
 
 function parseLogFile(content, fileIndex, totalFiles) {
-
     // chart line for this node
     nodeIndex = nodeChartLines.length;
     lines = content.split("\n");
@@ -105,23 +104,21 @@ function parseLogFile(content, fileIndex, totalFiles) {
 
     // parse lines
     for (let lineIndex=0; lineIndex<lines.length; lineIndex++) {
-        let line = lines[lineIndex];
-        let split = line.split(" ");
-        let date = line.split(" ")[2];
-        let logLevel = split[1];
-
-        if (line.includes("Node connection info:") ){
-            nodeSocket = split[split.length - 1 ].replaceAll('"', '');
+        let line_string = lines[lineIndex];
+        if (line_string.length == 0) {
+            continue
         }
 
-        let srcLine = split[3];
+        let line = JSON.parse(line_string);
 
-        // remove first parts of text
-        split.shift();
-        split.shift();
-        split.shift();
-        split.shift();
-        let actual_text = split.join(" ");
+        let date = line.timestamp;
+        let logLevel = line.level;
+        let msg = line.fields.message;
+        let srcLine = line.target;
+
+        if (msg.includes("connection info:") ){
+            nodeSocket = msg[msg.length - 1].replaceAll('"', '');
+        }
 
         let time = Math.floor(new Date(date).getTime() / 1000);
         if (isNaN(time)) {
@@ -144,7 +141,7 @@ function parseLogFile(content, fileIndex, totalFiles) {
             nodeChartLine.data.push({
                 x: time,
                 // y is set after nodes are sorted
-                text: actual_text,
+                text: msg,
                 lineIndex: displayedLineIndex,
                 date: date,
                 showLine,
@@ -156,7 +153,6 @@ function parseLogFile(content, fileIndex, totalFiles) {
     }
 
     nodeChartLines.push(nodeChartLine);
-
 }
 
 // Returns a function, that, as long as it continues to be invoked, will not
@@ -195,14 +191,13 @@ function bindDisplayFilters () {
         $("#chart").append('<canvas id="canvas"></canvas>')
         window.chart = null;
         loadFiles()
-
     };
 
-    $("#filter-text").on('input',debounce( function(e) {
+    $("#filter-text").on('input', debounce( function(e) {
         console.log("debounced filter");
         reParseData()
     }, 250));
-    $("#format-text").on('input',debounce( function(e) {
+    $("#format-text").on('input', debounce( function(e) {
         console.log("debounced format");
         reParseData()
     }, 250));
@@ -257,7 +252,6 @@ function sortAllLogLines() {
 
 let linesEl = $("#lines");
 function drawLines() {
-
     let lineTemplate = $("#format-text").val();
     for (let i=0; i<allLogLines.length; i++) {
         let line = allLogLines[i];
